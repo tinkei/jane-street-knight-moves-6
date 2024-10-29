@@ -1,0 +1,28 @@
+[build-system]
+requires = [
+    "setuptools>=61",
+    # "setuptools_scm[toml]>=7",
+    "wheel"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jane-street-knight-moves-6"
+version = "0.0.1"
+description = "Solver for Jane Street Puzzle: Knight Moves 6"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "numpy",
+    "pandas",
+    "plotly",
+    "streamlit",
+    "sqlalchemy"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.black]
+line-length = 120
+target-version = ["py39"]
