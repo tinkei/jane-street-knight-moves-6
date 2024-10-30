@@ -31,7 +31,7 @@ def index_to_coord(row: int, col: int) -> str:
     return letter + number
 
 
-def solution_string_to_coordinate_list(solution_string: str) -> tuple[str, str, str, list[str], list[str]]:
+def solution_string_to_coordinate_list(solution_string: str) -> tuple[int, int, int, list[str], list[str]]:
     """
     Breaks down a solution string to individual components.
 
@@ -43,9 +43,9 @@ def solution_string_to_coordinate_list(solution_string: str) -> tuple[str, str, 
         tuple: A, B, C, and the two paths, with coordinates like "a1" or "b3".
     """
     solution_split = solution_string.split(",")
-    A = solution_split[0]
-    B = solution_split[1]
-    C = solution_split[2]
+    A = int(solution_split[0])
+    B = int(solution_split[1])
+    C = int(solution_split[2])
     paths = solution_split[3:]
     path_start = paths.index("a6")
     path1 = paths[:path_start]
@@ -53,7 +53,7 @@ def solution_string_to_coordinate_list(solution_string: str) -> tuple[str, str, 
     return A, B, C, path1, path2
 
 
-def path_to_solution_string(A, B, C, path1, path2) -> str:
+def path_to_solution_string(A: int, B: int, C: int, path1: list[str], path2: list[str]) -> str:
     """
     Format a solution string from individual components.
 
@@ -64,7 +64,15 @@ def path_to_solution_string(A, B, C, path1, path2) -> str:
         solution_string (str): A correctly formatted solution string.
             E.g. "1,2,253,a1,b3,c5,d3,f4,d5,f6,a6,c5,a4,b2,c4,d2,f1".
     """
-    return ",".join((A, B, C, ",".join(path1), ",".join(path2)))
+    return ",".join((str(A), str(B), str(C), path_to_string(path1), path_to_string(path2)))
+
+
+def path_to_string(path: list[str]) -> str:
+    return ",".join(path)
+
+
+def string_to_path(path_string: str) -> list[str]:
+    return path_string.split(",")
 
 
 if __name__ == "__main__":
