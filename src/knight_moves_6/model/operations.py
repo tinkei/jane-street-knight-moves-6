@@ -1,8 +1,10 @@
+import collections
 from typing import Optional
 
 from sqlalchemy.dialects.sqlite import insert
-from sqlalchemy.orm import Session
 
+from knight_moves_6.calculation.coordinate_map import string_to_path
+from knight_moves_6.model.database import Session
 from knight_moves_6.model.model_abc import ABCCombination
 from knight_moves_6.model.model_base import Base
 from knight_moves_6.model.model_path import KnightPath
@@ -143,3 +145,69 @@ def get_top_solutions(session: Session, n: int) -> list[Solution]:
         list[Solution]: List of top N Solution instances sorted by sum_abc.
     """
     return session.query(Solution).order_by(Solution.sum_abc).limit(n).all()
+
+
+def read_all_scores(session: Session) -> list[tuple[PathScore, ABCCombination, KnightPath]]:
+    """
+    Retrieves all PathScore records along with related ABCCombination and KnightPath records.
+
+    Args:
+        session (Session): SQLAlchemy session to interact with the database.
+
+    Returns:
+        list[tuple[PathScore, ABCCombination, KnightPath]]: A list of tuples,
+        each containing a PathScore, ABCCombination, and KnightPath instance.
+    """
+    # Query to join PathScore with ABCCombination and KnightPath using the relationships defined in models
+    results = (
+        session.query(PathScore, ABCCombination, KnightPath)
+        .join(ABCCombination, PathScore.abc_combination_id == ABCCombination.id)
+        .join(KnightPath, PathScore.knight_path_id == KnightPath.id)
+        .all()
+    )
+    return results
+
+
+def get_processed_scores(session: Session) -> dict[tuple[int, int, int], list[list[str]]]:
+    """
+    Retrieves processed scores by calling read_all_scores and flattening the output
+    to only include A, B, C, and the knight path.
+
+    Args:
+        session (Session): SQLAlchemy session to interact with the database.
+
+    Returns:
+        dict[tuple[int, int, int], list[list[str]]]: A dictionary with keys (A, B, C) and
+        a list of valid paths as values.
+    """
+    valid_paths = read_all_scores(session)
+    # processed_paths = [
+    #     (string_to_path(valid_path[2].path), valid_path[1].A, valid_path[1].B, valid_path[1].C)
+    #     for valid_path in valid_paths
+    # ]
+    processed_paths = collections.defaultdict(list)
+    for valid_path in valid_paths:
+        key = (valid_path[1].A, valid_path[1].B, valid_path[1].C)
+        processed_paths[key].append(string_to_path(valid_path[2].path))
+    return processed_paths
+
+
+if __name__ == "__main__":
+
+    from knight_moves_6.calculation.constant import GRID
+    from knight_moves_6.calculation.coordinate_map import path_to_solution_string
+    from knight_moves_6.calculation.validation import is_valid_solution
+
+    session = Session()
+    try:
+        processed_paths = get_processed_scores(session)
+        for k, v in processed_paths.items():
+            v_a1 = [path for path in v if path[0] == "a1"]
+            v_a6 = [path for path in v if path[0] == "a6"]
+            print(f"ABC {k} has {len(v)} valid paths, {len(v_a1)} from a1 and {len(v_a6)} from a6.")
+            solution_string = path_to_solution_string(*k, v_a1[0], v_a6[0])
+            print(f"Solution string: {solution_string}")
+            print(f"Is valid solution? {is_valid_solution(GRID, solution_string)}")
+        # verify_score = [calculate_path_score(GRID, *score) for score in processed_paths]
+    finally:
+        session.close()

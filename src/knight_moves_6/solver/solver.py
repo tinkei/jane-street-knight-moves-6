@@ -2,6 +2,7 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_compl
 from typing import Generator
 
 from sqlalchemy import asc, insert
+from sqlalchemy.orm import Query
 
 from knight_moves_6.calculation.calculate_score import calculate_path_score
 from knight_moves_6.calculation.constant import PATH_SUM
@@ -30,7 +31,7 @@ def abc_combination_generator(session: Session) -> Generator[ABCCombination, Non
         yield combination
 
 
-def generate_batches(session: Session, batch_size: int = 1000) -> Generator[list[KnightPath], None, None]:
+def generate_batches(session: Session, batch_size: int = 100000) -> Generator[list[KnightPath], None, None]:
     """
     Yields batches of knight paths from the database, ordered by id.
 
@@ -41,14 +42,15 @@ def generate_batches(session: Session, batch_size: int = 1000) -> Generator[list
     Yields:
         Generator[list[KnightPath], None, None]: Batch of knight paths of specified size.
     """
-    offset = 0
-    while True:
-        knight_paths_batch = (
-            session.query(KnightPath).order_by(asc(KnightPath.id)).limit(batch_size).offset(offset).all()
-        )
-        if not knight_paths_batch:
-            break  # Stop if no more paths are fetched.
-        offset += batch_size
+    query: Query = session.query(KnightPath).execution_options(stream_results=True).yield_per(batch_size)
+    # .order_by(asc(KnightPath.id))
+    knight_paths_batch = []
+    for knight_path in query:
+        knight_paths_batch.append(knight_path)
+        if len(knight_paths_batch) == batch_size:
+            yield knight_paths_batch  # Yield a full batch
+            knight_paths_batch = []  # Reset for the next batch
+    if knight_paths_batch:  # Yield any remaining rows after the loop completes
         yield knight_paths_batch
 
 
@@ -77,12 +79,12 @@ def evaluate_knight_paths_for_abc_combination(
         for path in knight_paths
     ]
     # Store the evaluated score in PathScore table only when it is equal to 2024:
-    path_scores = [path for path in knight_paths if path["score"] == PATH_SUM]
+    path_scores = [path for path in path_scores if path["score"] == PATH_SUM]
 
     return path_scores
 
 
-def solver(session: Session, max_workers: int = 4, batch_size: int = 1000):
+def solver(session: Session, max_workers: int = 16, batch_size: int = 100000):
     """
     Main solver function that evaluates ABC combinations across batches of knight paths in parallel.
 
@@ -95,22 +97,25 @@ def solver(session: Session, max_workers: int = 4, batch_size: int = 1000):
 
     for combination in abc_combination_generator(session):
         print(f"Processing A+B+C={combination.sum_abc} (A={combination.A} B={combination.B} C={combination.C})...")
-        futures = []
+        jobs = []
         # with ThreadPoolExecutor(max_workers=max_workers) as executor:
         with ProcessPoolExecutor(max_workers=max_workers) as executor:
             for path_batch in generate_batches(session, batch_size=batch_size):
-                futures.append(executor.submit(evaluate_knight_paths_for_abc_combination, combination, path_batch))
+                jobs.append(executor.submit(evaluate_knight_paths_for_abc_combination, combination, path_batch))
 
-            for future in as_completed(futures):
+            for job in as_completed(jobs):
                 # Collect results as they complete.
-                path_scores = future.result()
+                path_scores = job.result()
+                del jobs[job]
                 # print(path_scores[0]["score"])
                 # print(type(path_scores[0]["score"]))
-
-                stmt = insert(PathScore).values(path_scores)  # .on_conflict_do_nothing()
-                session.execute(stmt)
-                session.commit()
-                all_scores.extend([my_dict["score"] for my_dict in path_scores])
+                if len(path_scores) > 0:
+                    print("Valid path detected!")
+                    print(path_scores)
+                    stmt = insert(PathScore).values(path_scores)  # .on_conflict_do_nothing()
+                    session.execute(stmt)
+                    session.commit()
+                    all_scores.extend([my_dict["score"] for my_dict in path_scores])
 
         # Commit the session to apply batched insertions after each combination.
         session.commit()

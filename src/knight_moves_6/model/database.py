@@ -87,7 +87,7 @@ def read_abc(only_unevaluated: bool = True) -> list[ABCCombination]:
 
 if __name__ == "__main__":
 
-    from knight_moves_6.calculation.constant import SAMPLE_SOLUTION as solution_string
+    from knight_moves_6.calculation.constant import MY_SOLUTION as solution_string
 
     # Read all ABC combinations.
     abc_combinations = read_abc(only_unevaluated=False)

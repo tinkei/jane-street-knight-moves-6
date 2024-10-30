@@ -251,10 +251,11 @@ def visualize_grid(grid: list[list[str]], path1: list[str], path2: list[str], A:
 if __name__ == "__main__":
 
     # Test the function with an example grid, path, and values.
-    from knight_moves_6.calculation.constant import GRID, SAMPLE_SOLUTION
+    from knight_moves_6.calculation.constant import GRID, MY_SOLUTION, SAMPLE_SOLUTION
     from knight_moves_6.calculation.coordinate_map import solution_string_to_coordinate_list
 
     solution_string = SAMPLE_SOLUTION
+    solution_string = MY_SOLUTION
     A, B, C, path1, path2 = solution_string_to_coordinate_list(solution_string)
     print(A, B, C)
     print(path1)
