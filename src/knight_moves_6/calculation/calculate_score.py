@@ -215,3 +215,14 @@ if __name__ == "__main__":
     print(score2_exp)
     print(score1_exp == 2024)
     print(score2_exp == 2024)
+
+    A, B, C = 2, 3, 1
+    test_path = "a1,b3,c5,d3,e5,c4,b2,a4,c3,e2,f4,e6,d4,c6,b4,c2,e1,f3,d2,b1,a3,b5,d6,e4,f2,d1,e3,d5,f6"
+    test_path = test_path.split(",")
+    expression_template1 = calculate_path_expression(GRID, test_path)
+    print(expression_template1)
+    expression_substituted1 = eval(expression_template1)
+    print(expression_substituted1)
+    score1_exp = eval(expression_substituted1)
+    print(score1_exp)
+    print(score1_exp == 2024)

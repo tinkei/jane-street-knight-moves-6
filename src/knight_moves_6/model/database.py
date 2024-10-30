@@ -8,6 +8,7 @@ from knight_moves_6.calculation.coordinate_map import path_to_string, solution_s
 from knight_moves_6.model.model_abc import ABCCombination
 from knight_moves_6.model.model_base import Base
 from knight_moves_6.model.model_path import KnightPath
+from knight_moves_6.model.model_score import PathScore
 from knight_moves_6.model.model_solution import Solution
 
 
