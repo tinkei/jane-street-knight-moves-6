@@ -13,8 +13,8 @@ description = "Solver for Jane Street Puzzle: Knight Moves 6"
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
-    "numpy",
-    "pandas",
+    "black",
+    "isort",
     "plotly",
     "streamlit",
     "sqlalchemy"

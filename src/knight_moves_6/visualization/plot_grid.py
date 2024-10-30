@@ -1,3 +1,5 @@
+from enum import Enum, auto
+
 import plotly.graph_objects as go
 
 from knight_moves_6.calculation.calculate_score import (
@@ -5,10 +7,24 @@ from knight_moves_6.calculation.calculate_score import (
     calculate_path_score_cumulative,
     calculate_path_score_marginal,
 )
-from knight_moves_6.calculation.coordinate_map import coord_to_index, path_to_solution_string
+from knight_moves_6.calculation.coordinate_map import coord_to_index, path_to_solution_string, path_to_string
 
 
-def visualize_grid(grid: list[list[str]], path1: list[str], path2: list[str], A: int, B: int, C: int) -> go.Figure:
+class ShowPath(Enum):
+    A1 = auto()
+    A6 = auto()
+    BOTH = auto()
+
+
+def visualize_grid(
+    grid: list[list[str]],
+    path1: list[str],
+    path2: list[str],
+    A: int,
+    B: int,
+    C: int,
+    show_path: ShowPath = ShowPath.BOTH,
+) -> go.Figure:
     """
     Visualize the grid with accumulated scores along a knight's path.
 
@@ -19,6 +35,7 @@ def visualize_grid(grid: list[list[str]], path1: list[str], path2: list[str], A:
         A (int): The positive integer value for "A" in the grid.
         B (int): The positive integer value for "B" in the grid.
         C (int): The positive integer value for "C" in the grid.
+        show_path (ShowPath): Whether to display only one of the two paths, or both.
 
     Returns:
         The visualization plot.
@@ -45,96 +62,105 @@ def visualize_grid(grid: list[list[str]], path1: list[str], path2: list[str], A:
     # TODO: Don't duplicate the accumulation logic.
     #  The code is duplicated because we wish to display the operators +/x,
     #  which is information not found in `calculate_path_score_cumulative()`.
-    # Start accumulating score along the path.
-    prev_row, prev_col = path1_row_col[0]
-    prev_symbol = grid[prev_row][prev_col]
-    score = symbol_map[prev_symbol]
-    for i, (row, col) in enumerate(path1_row_col):
-        curr_symbol = grid[row][col]
-        score_change = symbol_map[curr_symbol]
-        operator = "+"
+    # Start accumulating score along Path 1.
+    if show_path in (ShowPath.BOTH, ShowPath.A1):
+        prev_row, prev_col = path1_row_col[0]
+        prev_symbol = grid[prev_row][prev_col]
+        score = symbol_map[prev_symbol]
+        for i, (row, col) in enumerate(path1_row_col):
+            curr_symbol = grid[row][col]
+            score_change = symbol_map[curr_symbol]
+            operator = "+"
 
-        # Apply the scoring rule based on the path 1.
-        if i > 0:
-            if curr_symbol == prev_symbol:
-                # Same value, add.
-                score += score_change
-                operator = "+"
+            # Apply the scoring rule based on the path 1.
+            if i > 0:
+                if curr_symbol == prev_symbol:
+                    # Same value, add.
+                    score += score_change
+                    operator = "+"
+                else:
+                    # Different value, multiply.
+                    score *= score_change
+                    operator = "x"
+
+                # Calculate start and end positions centered on cells for plotting arrows.
+                arrows_1.append(
+                    {
+                        "start_x": prev_col,
+                        "start_y": prev_row,
+                        "end_x": col,
+                        "end_y": row,
+                    }
+                )
+                prev_row, prev_col = row, col
+                prev_symbol = curr_symbol
+
+            # This isn't really the accumulated value, but a hack to display similar colors along the same path.
+            cumulative_scores[row][col] = (i + 1) / len(path2) + 1  # score == path1_cumulative_scores[i]
+            if score != path1_cumulative_scores[i]:
+                raise ValueError("Score calculation mismatch.")
+
+            # Generate cell text (e.g., "A (x2): 4" for original value, marginal increase, and accumulated value).
+            cell_text[row][col] = f"Path 1 Step {i+1}:<br>{curr_symbol} ({operator}{score_change}): {score}"
+
+    # Start accumulating score along Path 2.
+    if show_path in (ShowPath.BOTH, ShowPath.A6):
+        prev_row, prev_col = path2_row_col[0]
+        prev_symbol = grid[prev_row][prev_col]
+        score = symbol_map[prev_symbol]
+        for i, (row, col) in enumerate(path2_row_col):
+            curr_symbol = grid[row][col]
+            score_change = symbol_map[curr_symbol]
+            operator = "+"
+
+            # Apply the scoring rule based on the path.
+            if i > 0:
+                if curr_symbol == prev_symbol:
+                    # Same value, add.
+                    score += score_change
+                    operator = "+"
+                else:
+                    # Different value, multiply.
+                    score *= score_change
+                    operator = "x"
+
+                # Store start and end positions centered on cells for plotting arrows.
+                arrows_2.append(
+                    {
+                        "start_x": prev_col,
+                        "start_y": prev_row,
+                        "end_x": col,
+                        "end_y": row,
+                    }
+                )
+                prev_row, prev_col = row, col
+                prev_symbol = curr_symbol
+
+            # Since this is the second path, multiply by -1 to give it a different color on the heatmap.
+            # This isn't really the accumulated value, but a hack to display similar colors along the same path.
+            if cumulative_scores[row][col] is not None:
+                cumulative_scores[row][col] += -(i + 1) / len(path2) - 1  # - score
             else:
-                # Different value, multiply.
-                score *= score_change
-                operator = "x"
+                cumulative_scores[row][col] = -(i + 1) / len(path2) - 1  # - score
+            if score != path2_cumulative_scores[i]:
+                raise ValueError("Score calculation mismatch.")
 
-            # Calculate start and end positions centered on cells for plotting arrows.
-            arrows_1.append(
-                {
-                    "start_x": prev_col,
-                    "start_y": prev_row,
-                    "end_x": col,
-                    "end_y": row,
-                }
-            )
-            prev_row, prev_col = row, col
-            prev_symbol = curr_symbol
-
-        # This isn't really the accumulated value, but a hack to display similar colors along the same path.
-        cumulative_scores[row][col] = (i + 1) / len(path2) + 1  # score == path1_cumulative_scores[i]
-        if score != path1_cumulative_scores[i]:
-            raise ValueError("Score calculation mismatch.")
-
-        # Generate cell text (e.g., "A (x2): 4" for original value, marginal increase, and accumulated value).
-        cell_text[row][col] = f"Path 1 Step {i+1}:<br>{curr_symbol} ({operator}{score_change}): {score}"
-
-    # Start accumulating score along the path 2.
-    prev_row, prev_col = path2_row_col[0]
-    prev_symbol = grid[prev_row][prev_col]
-    score = symbol_map[prev_symbol]
-    for i, (row, col) in enumerate(path2_row_col):
-        curr_symbol = grid[row][col]
-        score_change = symbol_map[curr_symbol]
-        operator = "+"
-
-        # Apply the scoring rule based on the path.
-        if i > 0:
-            if curr_symbol == prev_symbol:
-                # Same value, add.
-                score += score_change
-                operator = "+"
+            # Generate cell text (e.g., "A (x2): 4" for original value, marginal increase, and accumulated value).
+            if cell_text[row][col] == "":
+                cell_text[row][col] += f"Path 2 Step {i+1}:<br>{curr_symbol} ({operator}{score_change}): {score}"
             else:
-                # Different value, multiply.
-                score *= score_change
-                operator = "x"
-
-            # Store start and end positions centered on cells for plotting arrows.
-            arrows_2.append(
-                {
-                    "start_x": prev_col,
-                    "start_y": prev_row,
-                    "end_x": col,
-                    "end_y": row,
-                }
-            )
-            prev_row, prev_col = row, col
-            prev_symbol = curr_symbol
-
-        # Since this is the second path, multiply by -1 to give it a different color on the heatmap.
-        # This isn't really the accumulated value, but a hack to display similar colors along the same path.
-        if cumulative_scores[row][col] is not None:
-            cumulative_scores[row][col] += -(i + 1) / len(path2) - 1  # - score
-        else:
-            cumulative_scores[row][col] = -(i + 1) / len(path2) - 1  # - score
-        if score != path2_cumulative_scores[i]:
-            raise ValueError("Score calculation mismatch.")
-
-        # Generate cell text (e.g., "A (x2): 4" for original value, marginal increase, and accumulated value).
-        if cell_text[row][col] == "":
-            cell_text[row][col] += f"Path 2 Step {i+1}:<br>{curr_symbol} ({operator}{score_change}): {score}"
-        else:
-            cell_text[row][col] += f"<br><br>Path 2 Step {i+1}:<br>{curr_symbol} ({operator}{score_change}): {score}"
+                cell_text[row][
+                    col
+                ] += f"<br><br>Path 2 Step {i+1}:<br>{curr_symbol} ({operator}{score_change}): {score}"
 
     # Set up the plot title and subtitle.
     title = f"Sum = {A + B + C} (A={A}, B={B}, C={C})"
-    subtitle = f"Solution string: {path_to_solution_string(A, B, C, path1, path2)}"
+    if show_path == ShowPath.BOTH:
+        subtitle = f"Solution string: {path_to_solution_string(A, B, C, path1, path2)}"
+    elif show_path == ShowPath.A1:
+        subtitle = f"Solution path: {path_to_string(path1)}"
+    elif show_path == ShowPath.A6:
+        subtitle = f"Solution path: {path_to_string(path2)}"
 
     # Create the grid using heatmap.
     fig = go.Figure(
@@ -227,9 +253,6 @@ def visualize_grid(grid: list[list[str]], path1: list[str], path2: list[str], A:
             showgrid=False,
             showline=False,
             zeroline=False,
-            # gridwidth=0,
-            # minor_showgrid=True,
-            # minor_gridwidth=3,
         ),
         yaxis=dict(
             title="Row",
@@ -239,9 +262,6 @@ def visualize_grid(grid: list[list[str]], path1: list[str], path2: list[str], A:
             showgrid=False,
             showline=False,
             zeroline=False,
-            # gridwidth=0,
-            # minor_showgrid=True,
-            # minor_gridwidth=3,
         ),
     )
 
