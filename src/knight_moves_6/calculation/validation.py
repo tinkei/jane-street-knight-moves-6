@@ -1,5 +1,5 @@
 from knight_moves_6.calculation.calculate_score import calculate_path_score
-from knight_moves_6.calculation.constant import KNIGHT_MOVES
+from knight_moves_6.calculation.constant import KNIGHT_MOVES, PATH_SUM
 from knight_moves_6.calculation.coordinate_map import coord_to_index, solution_string_to_coordinate_list
 
 
@@ -89,8 +89,8 @@ def is_valid_solution(grid: list[list[str]], solution_string: str) -> bool:
         and is_valid_path(path2, "a6", "f1")
         and is_valid_a1_f6(path1)
         and is_valid_a6_f1(path2)
-        and calculate_path_score(grid, path1, A, B, C) == 2024
-        and calculate_path_score(grid, path2, A, B, C) == 2024
+        and calculate_path_score(grid, path1, A, B, C) == PATH_SUM
+        and calculate_path_score(grid, path2, A, B, C) == PATH_SUM
     )
 
 

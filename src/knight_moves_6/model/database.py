@@ -3,7 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 
 from knight_moves_6.calculation.calculate_score import calculate_path_score
-from knight_moves_6.calculation.constant import GRID
+from knight_moves_6.calculation.constant import GRID, PATH_SUM
 from knight_moves_6.calculation.coordinate_map import path_to_string, solution_string_to_coordinate_list, string_to_path
 from knight_moves_6.model.model_abc import ABCCombination
 from knight_moves_6.model.model_base import Base
@@ -56,12 +56,12 @@ def read_solutions() -> list[Solution]:
 
 
 def top_n(n: int) -> list[Solution]:
-    """Get top N solutions with score = 2024, and sorted by `sum_abc`."""
+    """Get top N solutions with score == 2024, and sorted by `sum_abc`."""
     session = Session()
     top_solutions = (
         session.query(Solution)
-        .filter(Solution.score1 == 2024)
-        .filter(Solution.score2 == 2024)
+        .filter(Solution.score1 == PATH_SUM)
+        .filter(Solution.score2 == PATH_SUM)
         .order_by(asc(Solution.sum_abc))
         .limit(n)
         .all()

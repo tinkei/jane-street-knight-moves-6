@@ -1,4 +1,3 @@
-from knight_moves_6.calculation.constant import GRID
 from knight_moves_6.calculation.coordinate_map import coord_to_index
 
 
@@ -168,6 +167,7 @@ def calculate_path_expression(grid: list[list[str]], path: list[str]) -> str:
 
 
 if __name__ == "__main__":
+    from knight_moves_6.calculation.constant import GRID, PATH_SUM
 
     # Example parameters
     A, B, C = 1, 2, 253  # Example values for A, B, and C
@@ -180,24 +180,24 @@ if __name__ == "__main__":
 
     print("Score for path 1:", score1)
     print("Score for path 2:", score2)
-    print(score1 == 2024)
-    print(score2 == 2024)
+    print(score1 == PATH_SUM)
+    print(score2 == PATH_SUM)
 
     score1_cum = calculate_path_score_cumulative(GRID, example_path_1, A, B, C)
     score2_cum = calculate_path_score_cumulative(GRID, example_path_2, A, B, C)
 
     print("Cumulative score for path 1:", score1_cum)
     print("Cumulative score for path 2:", score2_cum)
-    print(score1_cum[-1] == 2024)
-    print(score2_cum[-1] == 2024)
+    print(score1_cum[-1] == PATH_SUM)
+    print(score2_cum[-1] == PATH_SUM)
 
     score1_mar = calculate_path_score_marginal(GRID, example_path_1, A, B, C)
     score2_mar = calculate_path_score_marginal(GRID, example_path_2, A, B, C)
 
     print("Marginal score for path 1:", score1_mar, "Sum:", sum(score1_mar))
     print("Marginal score for path 2:", score2_mar, "Sum:", sum(score2_mar))
-    print(sum(score1_mar) == 2024)
-    print(sum(score2_mar) == 2024)
+    print(sum(score1_mar) == PATH_SUM)
+    print(sum(score2_mar) == PATH_SUM)
 
     expression_template1 = calculate_path_expression(GRID, example_path_1)
     expression_template2 = calculate_path_expression(GRID, example_path_2)
@@ -213,8 +213,8 @@ if __name__ == "__main__":
     score2_exp = eval(expression_substituted2)
     print(score1_exp)
     print(score2_exp)
-    print(score1_exp == 2024)
-    print(score2_exp == 2024)
+    print(score1_exp == PATH_SUM)
+    print(score2_exp == PATH_SUM)
 
     A, B, C = 2, 3, 1
     test_path = "a1,b3,c5,d3,e5,c4,b2,a4,c3,e2,f4,e6,d4,c6,b4,c2,e1,f3,d2,b1,a3,b5,d6,e4,f2,d1,e3,d5,f6"
@@ -225,4 +225,4 @@ if __name__ == "__main__":
     print(expression_substituted1)
     score1_exp = eval(expression_substituted1)
     print(score1_exp)
-    print(score1_exp == 2024)
+    print(score1_exp == PATH_SUM)
