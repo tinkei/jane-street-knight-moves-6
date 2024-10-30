@@ -52,6 +52,7 @@ def display_top_solutions():
 if __name__ == "__main__":
 
     # Initialize the Streamlit app.
+    # st.set_page_config(layout="wide")
     st.title("Knight Moves 6 - Top Solutions")
 
     # Display the top solutions on page load.

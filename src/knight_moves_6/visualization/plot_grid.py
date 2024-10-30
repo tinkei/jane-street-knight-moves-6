@@ -168,10 +168,11 @@ def visualize_grid(
             z=cumulative_scores,
             text=cell_text,
             texttemplate="%{text}",
-            # textfont={"size": 30},
+            textfont={"size": 14},
             colorscale="Viridis",
             # colorbar=dict(title="Accumulated Score"),
             colorbar=dict(title="Step"),
+            showscale=False,
         )
     )
 
@@ -191,9 +192,9 @@ def visualize_grid(
             axref="x",
             ayref="y",
             showarrow=True,
-            # arrowhead=3,
-            # arrowsize=3,
-            # arrowwidth=8,
+            arrowhead=3,
+            arrowsize=2,
+            arrowwidth=4,
             arrowcolor="rgba(255, 0, 0, 0.5)",
         )
     for coordinates in arrows_2:
@@ -211,9 +212,9 @@ def visualize_grid(
             axref="x",
             ayref="y",
             showarrow=True,
-            # arrowhead=3,
-            # arrowsize=3,
-            # arrowwidth=8,
+            arrowhead=3,
+            arrowsize=2,
+            arrowwidth=4,
             arrowcolor="rgba(135, 206, 235, 0.5)",
         )
 
@@ -221,29 +222,34 @@ def visualize_grid(
     for row in range(len(grid)):
         for col in range(len(grid[0])):
             fig.add_annotation(
-                x=col - 0.4,
+                x=col - 0.36,
                 y=row + 0.3,
                 xref="x",
                 yref="y",
                 text=grid[row][col],
                 showarrow=False,
-                # font_size=80,
-                font_color="rgba(200, 200, 200, 0.8)",
+                font_size=32,
+                font_color="rgba(160, 160, 160, 0.8)",
             )
 
+    # Hack to properly scale in Streamlit.
+    if show_path in (ShowPath.A1, ShowPath.A6):
+        fig.update_layout(
+            autosize=False,
+            width=704,
+            height=704,
+        )
     # Configure figure settings.
     fig.update_layout(
         font=dict(
-            # family="Courier New, monospace",
-            # size=28,
+            size=16,
             # color="RebeccaPurple",
-            # variant="small-caps",
         ),
         title={
             "text": f"{title}<br><sup>{subtitle}</sup>",
             "x": 0.5,
             "xanchor": "center",
-            # "font": 30,
+            "font_size": 24,
         },
         xaxis=dict(
             title="Column",
@@ -253,6 +259,7 @@ def visualize_grid(
             showgrid=False,
             showline=False,
             zeroline=False,
+            tickfont_size=20,
         ),
         yaxis=dict(
             title="Row",
@@ -262,6 +269,9 @@ def visualize_grid(
             showgrid=False,
             showline=False,
             zeroline=False,
+            tickfont_size=20,
+            scaleanchor="x",
+            scaleratio=1,
         ),
     )
 
