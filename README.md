@@ -2,6 +2,8 @@
 
 This repo is my solution to Jane Street's [October 2024 puzzle](https://www.janestreet.com/puzzles/archive/).
 
+N.B.: The commits were pushed to GitHub only after the competition had concluded.
+
 ## Question Formulation
 
 ![Puzzle grid](images/october-2024.png)
@@ -48,11 +50,13 @@ This repo is my solution to Jane Street's [October 2024 puzzle](https://www.jane
   - Then loop over all _A_, _B_, _C_, starting from the lowest sum, and identify paths that evaluate to 2024.
   - Finally, select any two paths, one starting from _a1_ and one from _a6_, that has the same combinations of _A_, _B_, _C_.
 - The whole thing took around two and a half days.
+- As an afterthought, if I had realized the sample space of potential knight moves and that multiple optimal solutions exist, I would have ditched the idea of caching all possible knight moves and already interrupt the calculation when the first solution is encountered. But hindsight is 20/20.
 
 ## Set up
 
 - Create virtual environment once: `python -m venv $env:HomeDrive$env:HomePath\venvs\jane-street`
 - Activate virtual environment in PowerShell: `& "$env:HomeDrive$env:HomePath\venvs\jane-street\Scripts\Activate.ps1"`
+- `pip install -e .`
 - Navigate to `./src/knight_moves_6/solver`.
 - Note that all calculations are store in `./knight-moves-6.db`.
 - Generate all permutations of ABC using `generate_abc.py`.
@@ -63,7 +67,7 @@ This repo is my solution to Jane Street's [October 2024 puzzle](https://www.jane
 - (Manually) insert solutions to the Solution table using `write_solution()` in `knight_moves_6.model.database`.
 - Run the dashboard `streamlit run app.py` to inspect your top 3 solutions.
 
-### TODO
+### TODO (that I won't do now that the puzzle is solved)
 
 - [ ] Centralize database operations in `knight_moves_6.model.operations.py`. Right now it is all over the place in `knight_moves_6.solver`.
 - [ ] Insert valid solutions automatically. This is not implemented because we only need to submit one solution.

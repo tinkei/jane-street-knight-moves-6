@@ -1,11 +1,10 @@
+import warnings
+
 from knight_moves_6.calculation.calculate_score import calculate_path_expression
 from knight_moves_6.calculation.constant import GRID, KNIGHT_MOVES
 from knight_moves_6.calculation.coordinate_map import coord_to_index, index_to_coord, path_to_string
 from knight_moves_6.calculation.validation import is_valid_move
 from knight_moves_6.model.database import KnightPath, Session
-
-# path1 = ["a1", "b3", "c5", "d3", "f4", "d5", "f6"]
-# path2 = ["a6", "c5", "a4", "b2", "c4", "d2", "f1"]
 
 
 def find_knight_paths(
@@ -79,6 +78,7 @@ def generate_and_store_paths_a1() -> list[list[str]]:
     counter = [0]
 
     # Find paths from a1 to f6.
+    warnings.warn("`find_knight_paths()` is hardcoded to return only the first 20M paths.")
     find_knight_paths(
         start=a1_f6_start,
         end=a1_f6_end,
@@ -110,6 +110,7 @@ def generate_and_store_paths_a6() -> list[list[str]]:
     counter = [0]
 
     # Find paths from a6 to f1.
+    warnings.warn("`find_knight_paths()` is hardcoded to return only the first 20M paths.")
     find_knight_paths(
         start=a6_f1_start,
         end=a6_f1_end,

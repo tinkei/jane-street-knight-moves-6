@@ -154,7 +154,7 @@ def visualize_grid(
                 ] += f"<br><br>Path 2 Step {i+1}:<br>{curr_symbol} ({operator}{score_change}): {score}"
 
     # Set up the plot title and subtitle.
-    title = f"Sum = {A + B + C} (A={A}, B={B}, C={C})"
+    title = f"A+B+C={A + B + C} (A={A}, B={B}, C={C})"
     if show_path == ShowPath.BOTH:
         subtitle = f"Solution string: {path_to_solution_string(A, B, C, path1, path2)}"
     elif show_path == ShowPath.A1:

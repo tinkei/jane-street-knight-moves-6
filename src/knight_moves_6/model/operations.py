@@ -1,6 +1,7 @@
 import collections
 from typing import Optional
 
+from sqlalchemy import delete, select, text
 from sqlalchemy.dialects.sqlite import insert
 
 from knight_moves_6.calculation.coordinate_map import string_to_path
@@ -192,6 +193,39 @@ def get_processed_scores(session: Session) -> dict[tuple[int, int, int], list[li
     return processed_paths
 
 
+# Maintenance!
+def delete_unreferenced_knight_paths(session: Session, batch_size: int = 25000):
+    """Delete unreferenced entries in the KnightPath table."""
+    # Retrieve all distinct `knight_path_id` values in `PathScore`.
+    referenced_knight_path_ids = set(session.execute(select(PathScore.knight_path_id)).scalars().all())
+    print(f"{len(referenced_knight_path_ids)} knight paths are potential solutions.")
+
+    # Identify and delete unreferenced KnightPath ids.
+    session.execute(text("PRAGMA foreign_keys=ON"))  # Enable foreign key constraints in SQLite, once per session.
+    session.commit()
+    # counter = 0
+    # while True:
+    #     # TODO: Yes, the logic has bug. Overlapped selected ID, for instance.
+    #     # Retrieve a subset of KnightPath ids.
+    #     counter += 1
+    #     batch_path_ids = set(session.execute(select(KnightPath.id).limit(batch_size)).scalars().all())
+    #     unreferenced_ids = list(batch_path_ids - referenced_knight_path_ids)
+    #     print(f"Scheduling {len(unreferenced_ids)} unused paths out of batch size {len(batch_path_ids)} for deletion.")
+    #     if not unreferenced_ids:
+    #         break
+    #     if counter % 16 == 0:
+    #         session.commit()
+    #         counter = 0
+    #         print("Committed batch delete.")
+    session.execute(delete(KnightPath).where(KnightPath.id.not_in(referenced_knight_path_ids)))
+    session.commit()
+    print("Deleted all unused knight paths!")
+    print("Vaccumming database, will take a long time.")
+    session.execute(text("VACUUM"))  # This command shrinks DB size but will take forever.
+    session.commit()
+    print("Vaccumed database.")
+
+
 if __name__ == "__main__":
 
     from knight_moves_6.calculation.constant import GRID
@@ -199,15 +233,31 @@ if __name__ == "__main__":
     from knight_moves_6.calculation.validation import is_valid_solution
 
     session = Session()
+    processed_paths = None
     try:
         processed_paths = get_processed_scores(session)
+    finally:
+        session.close()
+
+    if processed_paths:
         for k, v in processed_paths.items():
             v_a1 = [path for path in v if path[0] == "a1"]
             v_a6 = [path for path in v if path[0] == "a6"]
             print(f"ABC {k} has {len(v)} valid paths, {len(v_a1)} from a1 and {len(v_a6)} from a6.")
-            solution_string = path_to_solution_string(*k, v_a1[0], v_a6[0])
-            print(f"Solution string: {solution_string}")
-            print(f"Is valid solution? {is_valid_solution(GRID, solution_string)}")
+            if len(v_a1) > 0 and len(v_a6) > 0:
+                solution_string = path_to_solution_string(*k, v_a1[0], v_a6[0])
+                print(f"Example solution string: {solution_string}")
+                print(f"Is valid solution? {is_valid_solution(GRID, solution_string)}")
         # verify_score = [calculate_path_score(GRID, *score) for score in processed_paths]
-    finally:
-        session.close()
+
+        # While not part of the problem description, let's try to find a solution the both paths do not overlap.
+        for k, v in reversed(processed_paths.items()):
+            print(f"Searching for ideal paths in {k} ...")
+            v_a1 = [path for path in v if path[0] == "a1"]
+            v_a6 = [path for path in v if path[0] == "a6"]
+            for path1 in v_a1:
+                for path2 in v_a6:
+                    if len(set(path1 + path2)) == len(path1) + len(path2):
+                        solution_string = path_to_solution_string(*k, path1, path2)
+                        print(f"Ideal solution string: {solution_string}")
+                        print(f"Is valid solution? {is_valid_solution(GRID, solution_string)}")

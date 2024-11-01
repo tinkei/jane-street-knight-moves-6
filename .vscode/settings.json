@@ -1,3 +1,4 @@
 {
+    "editor.rulers": [80, 120],
     "python.defaultInterpreterPath": "~\\venvs\\jane-street\\Scripts\\python.exe",
 }

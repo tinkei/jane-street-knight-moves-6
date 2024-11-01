@@ -1,7 +1,8 @@
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
+from time import sleep
 from typing import Generator
 
-from sqlalchemy import asc, insert
+from sqlalchemy import asc, insert, select, tuple_
 from sqlalchemy.orm import Query
 
 from knight_moves_6.calculation.calculate_score import calculate_path_score
@@ -69,7 +70,7 @@ def evaluate_knight_paths_for_abc_combination(
     """
     A, B, C = combination.A, combination.B, combination.C
 
-    # Need to evaluate twice somehow. # The first `eval()` only substitutes the values of A, B, C.
+    # Need to evaluate twice somehow. The first `eval()` only substitutes the values of A, B, C.
     path_scores = [
         {
             "abc_combination_id": combination.id,
@@ -82,6 +83,33 @@ def evaluate_knight_paths_for_abc_combination(
     path_scores = [path for path in path_scores if path["score"] == PATH_SUM]
 
     return path_scores
+
+
+def insert_unique_path_scores(session: Session, path_scores: list[dict]) -> None:
+    """Check for duplicates before insertion!"""
+    # Extract unique constraints from the incoming data (e.g., by specific fields).
+    unique_constraints = {(ps["abc_combination_id"], ps["knight_path_id"]) for ps in path_scores}
+    print(f"Attempting to insert {len(path_scores)} records to `PathScore`.")
+
+    # Query for existing records that match the unique constraints.
+    existing_records = session.execute(
+        select(PathScore.abc_combination_id, PathScore.knight_path_id).where(
+            tuple_(PathScore.abc_combination_id, PathScore.knight_path_id).in_(unique_constraints)
+        )
+    ).all()
+    print(f"Found {len(existing_records)} existing records in `PathScore`.")
+
+    # Filter out duplicates from path_scores.
+    existing_constraints = set(existing_records)
+    unique_path_scores = [
+        ps for ps in path_scores if (ps["abc_combination_id"], ps["knight_path_id"]) not in existing_constraints
+    ]
+    print(f"Inserting remaining {len(unique_path_scores)} new records to `PathScore`.")
+
+    # Insert the filtered unique records.
+    if unique_path_scores:
+        session.bulk_insert_mappings(PathScore, unique_path_scores)
+        session.commit()
 
 
 def solver(session: Session, max_workers: int = 16, batch_size: int = 100000):
@@ -105,16 +133,18 @@ def solver(session: Session, max_workers: int = 16, batch_size: int = 100000):
 
             for job in as_completed(jobs):
                 # Collect results as they complete.
-                path_scores = job.result()
-                del jobs[job]
+                sleep(1)
+                try:
+                    path_scores = job.result()
+                    # del jobs[job]
+                except RuntimeError as e:
+                    print(f"Error encountered: {e}")
+                    continue
                 # print(path_scores[0]["score"])
                 # print(type(path_scores[0]["score"]))
                 if len(path_scores) > 0:
-                    print("Valid path detected!")
-                    print(path_scores)
-                    stmt = insert(PathScore).values(path_scores)  # .on_conflict_do_nothing()
-                    session.execute(stmt)
-                    session.commit()
+                    print(f"{len(path_scores)} valid path detected!")
+                    insert_unique_path_scores(session, path_scores)
                     all_scores.extend([my_dict["score"] for my_dict in path_scores])
 
         # Commit the session to apply batched insertions after each combination.
