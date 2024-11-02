@@ -2,7 +2,7 @@
 
 This repo is my solution to Jane Street's [October 2024 puzzle](https://www.janestreet.com/puzzles/archive/).
 
-N.B.: The commits were pushed to GitHub only after the competition had concluded.
+N.B.: The commits were pushed to GitHub only after the challenge had concluded.
 
 ## Question Formulation
 
@@ -67,7 +67,7 @@ N.B.: The commits were pushed to GitHub only after the competition had concluded
 - (Manually) insert solutions to the Solution table using `write_solution()` in `knight_moves_6.model.database`.
 - Run the dashboard `streamlit run app.py` to inspect your top 3 solutions.
 
-### TODO (that I won't do now that the puzzle is solved)
+### TODO (that I won't be implementing now that the puzzle is solved...)
 
 - [ ] Centralize database operations in `knight_moves_6.model.operations.py`. Right now it is all over the place in `knight_moves_6.solver`.
 - [ ] Insert valid solutions automatically. This is not implemented because we only need to submit one solution.

@@ -226,6 +226,30 @@ def delete_unreferenced_knight_paths(session: Session, batch_size: int = 25000):
     print("Vaccumed database.")
 
 
+def delete_not_minimum_sum(session: Session):
+    """Delete suboptimal results."""
+    # Enable foreign key constraints in SQLite, once per session.
+    session.execute(text("PRAGMA foreign_keys=ON"))
+
+    # Identify suboptimal permutations of A, B, C that has already been evaluated.
+    suboptimal = session.query(ABCCombination).filter(ABCCombination.sum_abc > 6).filter(ABCCombination.evaluated).all()
+    print(f"Suboptimal evaluated permutations: {[(perm.A, perm.B, perm.C) for perm in suboptimal]}")
+    suboptimal = [perm.id for perm in suboptimal]
+    print(f"Suboptimal permutation ids: {suboptimal}")
+
+    # Delete ABC-Path combinations that are suboptimal.
+    session.execute(delete(PathScore).where(PathScore.abc_combination_id.in_(suboptimal)))
+    session.commit()
+    print("Suboptimal ABC-KnightPath combinations deleted.")
+
+    # Update permutation table.
+    session.query(ABCCombination).filter(ABCCombination.id.in_(suboptimal)).update({ABCCombination.evaluated: False})
+    session.commit()
+
+    # Clean up unused paths. This will "vacuum" the database, which takes a long time when there are millions of paths.
+    delete_unreferenced_knight_paths(session)
+
+
 if __name__ == "__main__":
 
     from knight_moves_6.calculation.constant import GRID
@@ -235,6 +259,8 @@ if __name__ == "__main__":
     session = Session()
     processed_paths = None
     try:
+        # delete_unreferenced_knight_paths(session)
+        # delete_not_minimum_sum(session)
         processed_paths = get_processed_scores(session)
     finally:
         session.close()
@@ -252,9 +278,19 @@ if __name__ == "__main__":
 
         # While not part of the problem description, let's try to find a solution the both paths do not overlap.
         for k, v in reversed(processed_paths.items()):
-            print(f"Searching for ideal paths in {k} ...")
+            print(f"Searching for ideal paths in {k} with sum {sum(k)} ...")
             v_a1 = [path for path in v if path[0] == "a1"]
             v_a6 = [path for path in v if path[0] == "a6"]
+            v_a1_l = [len(path) for path in v if path[0] == "a1"]
+            v_a6_l = [len(path) for path in v if path[0] == "a6"]
+            if len(v_a1_l) > 0:
+                print(f"Shortest path from a1: {min(v_a1_l)} | Longest path from a1: {max(v_a1_l)}")
+            else:
+                print("No paths from a1.")
+            if len(v_a6_l) > 0:
+                print(f"Shortest path from a6: {min(v_a6_l)} | Longest path from a6: {max(v_a6_l)}")
+            else:
+                print("No paths from a6.")
             for path1 in v_a1:
                 for path2 in v_a6:
                     if len(set(path1 + path2)) == len(path1) + len(path2):
